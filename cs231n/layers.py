@@ -171,7 +171,21 @@ def batchnorm_forward(x, gamma, beta, bn_param):
     # the momentum variable to update the running mean and running variance,    #
     # storing your result in the running_mean and running_var variables.        #
     #############################################################################
-    pass
+    cache = {}
+
+    sample_mean = x.mean(axis=0)
+    sample_var = x.var(axis=0)
+    running_mean = running_mean * momentum + (1-momentum) * sample_mean
+    running_var = running_var * momentum + (1-momentum) * sample_var
+    x_norm = (x - sample_mean) / np.sqrt(sample_var + eps) 
+    out = x_norm * gamma + beta
+
+    cache['x'] = x
+    cache['x_norm'] = x_norm
+    cache['sample_mean'] = sample_mean
+    cache['sample_var'] = sample_var
+    cache['gamma'] = gamma
+    cache['eps'] = eps
     #############################################################################
     #                             END OF YOUR CODE                              #
     #############################################################################
@@ -182,7 +196,7 @@ def batchnorm_forward(x, gamma, beta, bn_param):
     # and shift the normalized data using gamma and beta. Store the result in   #
     # the out variable.                                                         #
     #############################################################################
-    pass
+    out = ((x - running_mean) / np.sqrt(running_var + eps)) * gamma - beta
     #############################################################################
     #                             END OF YOUR CODE                              #
     #############################################################################
@@ -218,7 +232,24 @@ def batchnorm_backward(dout, cache):
   # TODO: Implement the backward pass for batch normalization. Store the      #
   # results in the dx, dgamma, and dbeta variables.                           #
   #############################################################################
-  pass
+  N, D = dout.shape
+  x_norm = cache['x_norm']
+  sample_mean = cache['sample_mean']
+  sample_var = cache['sample_var']
+  gamma = cache['gamma']
+  eps = cache['eps']
+  x = cache['x']
+
+  dbeta = np.sum(dout, axis=0)
+  dgamma = np.sum(dout * x_norm, axis=0)
+  dx_norm = dout * gamma
+  dsample_var = np.sum(- 1.0 / 2.0 * dx_norm * (x - sample_mean) / (sample_var + eps) ** (3.0/2.0), axis=0) 
+  dsample_mean = np.sum(- dx_norm / np.sqrt(sample_var + eps), axis=0)
+  dsample_mean += dsample_var / N * (np.sum(-2 * (x - sample_mean), axis=0))
+
+  dx = dx_norm / np.sqrt(sample_var + eps)
+  dx += dsample_var * 2 / N * (x - sample_mean)
+  dx += dsample_mean / N
   #############################################################################
   #                             END OF YOUR CODE                              #
   #############################################################################
@@ -248,7 +279,24 @@ def batchnorm_backward_alt(dout, cache):
   # should be able to compute gradients with respect to the inputs in a       #
   # single statement; our implementation fits on a single 80-character line.  #
   #############################################################################
-  pass
+  N, D = dout.shape
+  x_norm = cache['x_norm']
+  sample_mean = cache['sample_mean']
+  sample_var = cache['sample_var']
+  gamma = cache['gamma']
+  eps = cache['eps']
+  x = cache['x']
+
+  dbeta = np.sum(dout, axis=0)
+  dgamma = np.sum(dout * x_norm, axis=0)
+  dx_norm = dout * gamma
+  dsample_var = np.sum(- 1.0 / 2.0 * dx_norm * (x - sample_mean) / (sample_var + eps) ** (3.0/2.0), axis=0) 
+  dsample_mean = np.sum(- dx_norm / np.sqrt(sample_var + eps), axis=0)
+  #dsample_mean += dsample_var / N * (np.sum(-2 * (x - sample_mean), axis=0))
+
+  dx = dx_norm / np.sqrt(sample_var + eps)
+  dx += dsample_var * 2 / N * (x - sample_mean)
+  dx += dsample_mean / N
   #############################################################################
   #                             END OF YOUR CODE                              #
   #############################################################################
