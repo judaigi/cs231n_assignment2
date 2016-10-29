@@ -279,7 +279,7 @@ class FullyConnectedNet(object):
     db = [None]*(NL+1)
 
     loss, dout[NL] = softmax_loss(scores, y)
-    for n in xrange(NL-1):
+    for n in xrange(NL):
       loss += 0.5 * self.reg * np.sum(self.params['W'+str(n+1)]**2)
     
     dout[NL-1], dW[NL-1], db[NL-1] = affine_backward(dout[NL], cache[NL])
